@@ -1,0 +1,82 @@
+{
+  "name": "@suwatte/toolchain",
+  "version": "5.1.0",
+  "description": "Suwatte Toolchain",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "suwatte": "bin/suwatte.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "default": "./dist/runtime/index.js"
+    },
+    "./emulator": {
+      "types": "./dist/emulator/index.d.ts",
+      "default": "./dist/emulator/index.js"
+    },
+    "./validate": {
+      "types": "./dist/validate/index.d.ts",
+      "default": "./dist/validate/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\"",
+    "build": "tsc && npm run copy",
+    "build:clean": "npm run clean && npm run build",
+    "copy": "ncp ./src/templates ./dist/templates",
+    "test": "npm run build:clean && node --test tests/**/*.test.cjs"
+  },
+  "keywords": [
+    "toolchain",
+    "suwatte"
+  ],
+  "author": {
+    "name": "Mantton",
+    "email": "mantton.official@gmail.com",
+    "url": "https://mantton.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
+    "axios": "^1.5.1",
+    "chalk": "^4",
+    "commander": "^12.1.0",
+    "esbuild": "^0.25.0",
+    "fs-extra": "^11.2.0",
+    "ncp": "^2.0.0",
+    "serve-handler": "^6.1.5",
+    "typescript": "^5.5.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/commander": "^2.12.0",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.4.0",
+    "@types/serve-handler": "^6.1.4"
+  },
+  "peerDependencies": {
+    "sharp": "^0.34.0"
+  },
+  "peerDependenciesMeta": {
+    "sharp": {
+      "optional": true
+    }
+  },
+  "files": [
+    "/dist",
+    "/bin",
+    "/docs",
+    "/examples"
+  ]
+}
