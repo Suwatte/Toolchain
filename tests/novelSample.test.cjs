@@ -10,6 +10,8 @@ const execFileAsync = promisify(execFile);
 const toolchainRoot = path.resolve(__dirname, "..");
 const sampleRoot = path.join(toolchainRoot, "examples", "novel-source");
 const sampleDist = path.join(sampleRoot, "dist");
+const legacyRoot = path.join(sampleRoot, "legacy-v7");
+const legacyDist = path.join(legacyRoot, "dist");
 
 const {
   validateDelegateMethodResult,
@@ -25,11 +27,17 @@ const executeArtifact = async (filePath) => {
 
 test("controlled novel sample builds and runs as sibling JSC and WebKit artifacts", async () => {
   await fs.rm(sampleDist, { recursive: true, force: true });
+  await fs.rm(legacyDist, { recursive: true, force: true });
   try {
     await execFileAsync(
       process.execPath,
       [path.join(toolchainRoot, "bin", "suwatte.js"), "build"],
       { cwd: sampleRoot },
+    );
+    await execFileAsync(
+      process.execPath,
+      [path.join(toolchainRoot, "bin", "suwatte.js"), "build"],
+      { cwd: legacyRoot },
     );
 
     const manifest = JSON.parse(
@@ -89,7 +97,45 @@ test("controlled novel sample builds and runs as sibling JSC and WebKit artifact
     }
 
     assert.equal(results[0], results[1]);
+
+    const legacyManifest = JSON.parse(
+      await fs.readFile(path.join(legacyDist, "sources.json"), "utf8"),
+    );
+    assert.equal(legacyManifest.sources.length, 1);
+    const legacyMetadata = legacyManifest.sources[0];
+    const currentJSC = manifest.sources.find(
+      (source) => source.environment === "jsc",
+    );
+    assert.equal(legacyMetadata.id, currentJSC.id);
+    assert.equal(legacyMetadata.version, 0.9);
+    assert.equal(legacyMetadata.minSupportedAppVersion, undefined);
+
+    const { sourcePackage: legacyPackage } = await executeArtifact(
+      path.join(legacyDist, "sources", `${legacyMetadata.path}.stt`),
+    );
+    const legacySource = legacyPackage.bootstrap();
+    assert.equal(typeof legacySource.getChapterContent, "undefined");
+    assert.equal(typeof legacySource.getChapterPages, "function");
+
+    const legacyChapters = await legacySource.getChapters("controlled-novel");
+    const currentPackage = await executeArtifact(
+      path.join(sampleDist, "sources", `${currentJSC.path}.stt`),
+    );
+    const currentSource = currentPackage.sourcePackage.bootstrap();
+    const currentChapters = await currentSource.getChapters("controlled-novel");
+    assert.deepEqual(
+      JSON.parse(JSON.stringify(legacyChapters.map((chapter) => chapter.id))),
+      JSON.parse(JSON.stringify(currentChapters.map((chapter) => chapter.id))),
+    );
+
+    const pages = await legacySource.getChapterPages(
+      "controlled-novel",
+      "html-chapter",
+    );
+    assert.equal(pages.length, 1);
+    assert.ok(Buffer.from(pages[0].b64, "base64").length > 0);
   } finally {
     await fs.rm(sampleDist, { recursive: true, force: true });
+    await fs.rm(legacyDist, { recursive: true, force: true });
   }
 });

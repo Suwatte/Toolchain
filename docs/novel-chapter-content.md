@@ -138,12 +138,15 @@ coalesces callbacks and sends only finite chapter-local values clamped to
 [`examples/novel-source`](../examples/novel-source/README.md) contains one
 shared deterministic implementation with thin JSC and WebKit entries. It
 includes an HTML chapter, a plain-text chapter, stable error cases, and no
-network dependency. It is intentionally not part of a deployable catalog.
+network dependency. Its `legacy-v7` subproject supplies the image-page
+predecessor with identical source/content/chapter IDs for controlled upgrade
+testing. These fixtures are intentionally not part of a production catalog.
 
 ```sh
 npm test
 ```
 
-The suite compiles both artifacts, verifies their environment stamps and 7.1
+The suite compiles the legacy artifact plus both current artifacts, verifies
+their stable identities, environment stamps, version transition, and 7.1
 catalog floor, executes each bundle, validates both response formats and stable
 errors, and removes generated sample output.
