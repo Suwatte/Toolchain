@@ -60,11 +60,11 @@ Toolchain generates bootstrap wrappers automatically per emitted variant.
 
 Toolchain 5.1.0 includes the HTML/plain-text chapter contract, strict
 developer validation, stable locked/unavailable errors, optional chapter
-progress callbacks, and a controlled JSC/WebKit sample. Publication artifacts
-must declare `minSupportedAppVersion: "7.1"` or newer.
-
-See the [novel chapter-text contract](docs/novel-chapter-content.md) for the
-wire shape, migration steps, resource/authentication rules, limits, and sample.
+progress callbacks, and authenticated resource metadata. A title with
+`contentType: ContentType.NOVEL` is a hard declaration that its chapters are
+served by `getChapterText(contentId, chapterId)`; the app does not fall back to
+`getChapterPages`. Mixed sources implement both chapter methods and select the
+representation independently on each title's `contentType`.
 
 ## ID Convention
 

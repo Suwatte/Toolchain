@@ -2,13 +2,10 @@
 
 ## 5.1.0 - 2026-07-14
 
-- Added the source-publication declaration, HTML/plain-text chapter text,
-  resources, progress callback, and stable source error types.
-- Added strict developer-time chapter validation and the publication
-  minimum-app-version gate.
+- Added `ContentType.NOVEL` routing and the HTML/plain-text `getChapterText`
+  contract, including resources, progress callbacks, and stable source errors.
+- Added strict developer-time validation for chapter text and resources.
 - Added `minSupportedAppVersion` propagation to generated catalog metadata.
-- Added one shared controlled novel sample that builds and executes in both JSC
-  and WebKit environments, with migration and resource/authentication guidance.
 
 ## Unreleased
 
