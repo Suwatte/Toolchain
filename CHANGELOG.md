@@ -2,10 +2,10 @@
 
 ## 5.1.0 - 2026-07-14
 
-- Added the version-1 source-publication configuration, HTML/plain-text chapter
-  content, resource, progress callback, and stable source error types.
-- Added strict developer-time chapter validation and the publication capability
-  plus minimum-app-version gate.
+- Added the source-publication declaration, HTML/plain-text chapter text,
+  resources, progress callback, and stable source error types.
+- Added strict developer-time chapter validation and the publication
+  minimum-app-version gate.
 - Added `minSupportedAppVersion` propagation to generated catalog metadata.
 - Added one shared controlled novel sample that builds and executes in both JSC
   and WebKit environments, with migration and resource/authentication guidance.

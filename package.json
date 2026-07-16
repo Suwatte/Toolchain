@@ -79,7 +79,6 @@
   "files": [
     "/dist",
     "/bin",
-    "/docs",
-    "/examples"
+    "/docs"
   ]
 }

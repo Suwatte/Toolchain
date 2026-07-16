@@ -51,15 +51,13 @@ export type ChapterPage = {
   raw?: ArrayBuffer;
 };
 
-export enum SourceChapterContentFormat {
+export enum SourceChapterTextFormat {
   HTML = "html",
   PLAIN_TEXT = "plainText",
 }
 
-export const SOURCE_CHAPTER_CONTENT_CONTRACT_VERSION = 1 as const;
-
-/** Wire limits shared with Suwatte's version-1 decoder. Values are UTF-8 bytes. */
-export const SOURCE_CHAPTER_CONTENT_LIMITS = Object.freeze({
+/** Wire limits shared with Suwatte's chapter-text decoder. Values are UTF-8 bytes. */
+export const SOURCE_CHAPTER_TEXT_LIMITS = Object.freeze({
   bridgePayload: 4 * 1024 * 1024,
   body: 2 * 1024 * 1024,
   resources: 512,
@@ -79,10 +77,9 @@ export type SourceChapterResource = {
   context?: JsonObject;
 };
 
-/** Versioned response returned by getChapterContent(contentId, chapterId). */
-export type SourceChapterContent = {
-  contractVersion: typeof SOURCE_CHAPTER_CONTENT_CONTRACT_VERSION;
-  format: SourceChapterContentFormat;
+/** Semantic text returned by getChapterText(contentId, chapterId). */
+export type SourceChapterText = {
+  format: SourceChapterTextFormat;
   body: string;
   resources?: SourceChapterResource[];
 };

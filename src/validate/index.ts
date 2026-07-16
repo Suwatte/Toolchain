@@ -5,19 +5,11 @@ import {
   ContentType,
   PageSectionStyle,
   ReadingMode,
-  SOURCE_CHAPTER_CONTENT_CONTRACT_VERSION,
-  SOURCE_CHAPTER_CONTENT_LIMITS,
-  SourceChapterContentFormat,
-  SourceChapterPresentation,
+  SOURCE_CHAPTER_TEXT_LIMITS,
+  SourceChapterTextFormat,
   TrackStatus,
   UIKeyboardType,
 } from "../types";
-import type {
-  Delegate,
-  SourceConfiguration,
-  SourceInfo,
-} from "../types";
-
 const NonEmptyStringSchema = z.string().min(1);
 const TitleSchema = z.string().min(1);
 const PositiveFiniteNumberSchema = z.number().finite().positive();
@@ -123,8 +115,6 @@ export const SourceConfigurationSchema = z.object({
   imageReferer: NonEmptyStringSchema.optional(),
   endpoint: NonEmptyArray(NonEmptyStringSchema).optional(),
   useClientForImageRequests: z.boolean().optional(),
-  chapterPresentation: z.nativeEnum(SourceChapterPresentation).optional(),
-  chapterContentVersion: z.number().int().optional(),
 });
 
 export const StatisticsSchema = z.object({
@@ -245,32 +235,31 @@ const boundedUTF8String = (maximum: number, field: string) =>
 
 export const SourceChapterResourceSchema = z.object({
   href: boundedUTF8String(
-    SOURCE_CHAPTER_CONTENT_LIMITS.resourceHref,
+    SOURCE_CHAPTER_TEXT_LIMITS.resourceHref,
     "href",
   ).refine((value) => canonicalSourceChapterResourceHref(value) !== null, {
     message: "href must be a strict canonical relative resource path",
   }),
   url: boundedUTF8String(
-    SOURCE_CHAPTER_CONTENT_LIMITS.resourceURL,
+    SOURCE_CHAPTER_TEXT_LIMITS.resourceURL,
     "url",
   ).refine(isSafeSourceChapterResourceURL, {
     message: "url must be host-bearing HTTP(S) without credentials",
   }),
   mediaType: boundedUTF8String(
-    SOURCE_CHAPTER_CONTENT_LIMITS.resourceMediaType,
+    SOURCE_CHAPTER_TEXT_LIMITS.resourceMediaType,
     "mediaType",
   ).optional(),
   context: JsonObjectSchema.optional(),
 });
 
-export const SourceChapterContentSchema = z
+export const SourceChapterTextSchema = z
   .object({
-    contractVersion: z.literal(SOURCE_CHAPTER_CONTENT_CONTRACT_VERSION),
-    format: z.nativeEnum(SourceChapterContentFormat),
-    body: boundedUTF8String(SOURCE_CHAPTER_CONTENT_LIMITS.body, "body"),
+    format: z.nativeEnum(SourceChapterTextFormat),
+    body: boundedUTF8String(SOURCE_CHAPTER_TEXT_LIMITS.body, "body"),
     resources: z
       .array(SourceChapterResourceSchema)
-      .max(SOURCE_CHAPTER_CONTENT_LIMITS.resources)
+      .max(SOURCE_CHAPTER_TEXT_LIMITS.resources)
       .default([]),
   })
   .superRefine((content, context) => {
@@ -299,10 +288,10 @@ export const SourceChapterContentSchema = z
       return;
     }
 
-    if (utf8ByteCount(serialized) > SOURCE_CHAPTER_CONTENT_LIMITS.bridgePayload) {
+    if (utf8ByteCount(serialized) > SOURCE_CHAPTER_TEXT_LIMITS.bridgePayload) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `chapter response exceeds ${SOURCE_CHAPTER_CONTENT_LIMITS.bridgePayload} UTF-8 bytes`,
+        message: `chapter response exceeds ${SOURCE_CHAPTER_TEXT_LIMITS.bridgePayload} UTF-8 bytes`,
       });
     }
   });
@@ -766,7 +755,7 @@ export const DelegateSchema = z.object({
   getContent: FunctionSchema,
   getChapters: FunctionSchema.optional(),
   getChapterPages: FunctionSchema.optional(),
-  getChapterContent: FunctionSchema.optional(),
+  getChapterText: FunctionSchema.optional(),
   willRequestImage: FunctionSchema.optional(),
   redrawImage: FunctionSchema.optional(),
   getContentProgress: FunctionSchema.optional(),
@@ -790,86 +779,6 @@ export const SourceVariantSchema = z.object({
 
 export const SourceClassSchema = FunctionSchema;
 export const SourceEntrySchema = FunctionSchema;
-
-export const MINIMUM_PUBLICATION_APP_VERSION = "7.1";
-
-const numericVersionComponents = (value: string): number[] | null => {
-  if (!/^\d+(?:\.\d+)*$/.test(value)) {
-    return null;
-  }
-  return value.split(".").map(Number);
-};
-
-export const compareNumericVersions = (left: string, right: string): number => {
-  const leftComponents = numericVersionComponents(left);
-  const rightComponents = numericVersionComponents(right);
-  if (!leftComponents || !rightComponents) {
-    throw new Error("App versions must contain only dot-separated integers.");
-  }
-
-  const count = Math.max(leftComponents.length, rightComponents.length);
-  for (let index = 0; index < count; index += 1) {
-    const difference =
-      (leftComponents[index] ?? 0) - (rightComponents[index] ?? 0);
-    if (difference !== 0) {
-      return difference < 0 ? -1 : 1;
-    }
-  }
-  return 0;
-};
-
-/** Mirrors the app's runtime-only method/presentation/version capability gate. */
-export const hasSourceChapterContentCapability = (
-  configuration: SourceConfiguration | undefined,
-  delegate: Pick<Delegate, "getChapterContent">,
-): boolean =>
-  configuration?.chapterPresentation === SourceChapterPresentation.PUBLICATION &&
-  configuration.chapterContentVersion ===
-    SOURCE_CHAPTER_CONTENT_CONTRACT_VERSION &&
-  typeof delegate.getChapterContent === "function";
-
-/**
- * Validates the cross-field publication declaration that individual zod
- * schemas cannot see. Legacy/image sources remain outside this boundary.
- */
-export const validateSourcePublicationContract = (
-  info: SourceInfo,
-  configuration: SourceConfiguration | undefined,
-  delegate: Pick<Delegate, "getChapters" | "getChapterContent">,
-): void => {
-  if (configuration?.chapterPresentation !== SourceChapterPresentation.PUBLICATION) {
-    return;
-  }
-
-  if (
-    configuration.chapterContentVersion !==
-    SOURCE_CHAPTER_CONTENT_CONTRACT_VERSION
-  ) {
-    throw new Error(
-      `Publication sources must declare chapterContentVersion ${SOURCE_CHAPTER_CONTENT_CONTRACT_VERSION}.`,
-    );
-  }
-  if (typeof delegate.getChapters !== "function") {
-    throw new Error("Publication sources must implement getChapters.");
-  }
-  if (typeof delegate.getChapterContent !== "function") {
-    throw new Error("Publication sources must implement getChapterContent.");
-  }
-
-  const minimumVersion = info.minSupportedAppVersion;
-  if (!minimumVersion) {
-    throw new Error(
-      `Publication sources must declare minSupportedAppVersion ${MINIMUM_PUBLICATION_APP_VERSION} or newer.`,
-    );
-  }
-  if (
-    compareNumericVersions(minimumVersion, MINIMUM_PUBLICATION_APP_VERSION) < 0
-  ) {
-    throw new Error(
-      `Publication source minSupportedAppVersion must be ${MINIMUM_PUBLICATION_APP_VERSION} or newer.`,
-    );
-  }
-};
 
 // Runtime capability validators
 const hasMethod = (value: unknown, key: string): boolean =>
@@ -959,7 +868,7 @@ export const DelegateResultSchemaMap = {
   getContent: ContentSchema,
   getChapters: NonEmptyArray(ChapterSchema),
   getChapterPages: NonEmptyArray(ChapterPageSchema),
-  getChapterContent: SourceChapterContentSchema,
+  getChapterText: SourceChapterTextSchema,
   willRequestImage: NetworkRequestSchema,
   redrawImage: z.union([RedrawSchema, z.null()]),
   getContentProgress: z.union([ContentProgressDataSchema, z.null()]),

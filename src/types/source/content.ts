@@ -14,6 +14,7 @@ export type Content = {
 
   rating: ContentRating;
   status?: ContentStatus;
+  /** NOVEL routes exclusively to getChapterText; all other values use pages. */
   contentType?: ContentType;
   readingMode?: ReadingMode;
 
@@ -82,6 +83,7 @@ export enum ContentType {
   MANHUA,
   MANHWA,
   COMIC,
+  /** Hard contract: chapters are semantic text returned by getChapterText. */
   NOVEL,
 }
 

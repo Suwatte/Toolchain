@@ -6,7 +6,7 @@ import {
   SortOptions,
 } from "./item";
 import { Content, TrackStatus } from "./content";
-import { Chapter, ChapterPage, SourceChapterContent } from "./chapter";
+import { Chapter, ChapterPage, SourceChapterText } from "./chapter";
 import { HomePage, ItemPageResponse, SourceFeed } from "./page";
 import { SourceConfiguration } from "./configuration";
 import { SearchFilter } from "./filter";
@@ -75,13 +75,15 @@ export interface Delegate {
     chapterId: string,
   ): Promise<ChapterPage[]>;
   /**
-   * Returns semantic HTML or literal plain text for publication sources.
+   * Returns semantic HTML or literal plain text for ContentType.NOVEL titles.
+   * A source containing both novels and image-based titles implements both
+   * chapter methods; the title's contentType selects the method.
    * The app never falls back to getChapterPages when this method fails.
    */
-  getChapterContent?(
+  getChapterText?(
     contentId: string,
     chapterId: string,
-  ): Promise<SourceChapterContent>;
+  ): Promise<SourceChapterText>;
   willRequestImage?(request: NetworkRequest): Promise<NetworkRequest>;
   redrawImage?(request: RedrawImageRequest): Promise<Redraw | null>;
 

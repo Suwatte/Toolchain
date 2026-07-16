@@ -58,12 +58,12 @@ Toolchain generates bootstrap wrappers automatically per emitted variant.
 
 ### Novel publication chapters
 
-Toolchain 5.1.0 includes the versioned HTML/plain-text chapter contract, strict
+Toolchain 5.1.0 includes the HTML/plain-text chapter contract, strict
 developer validation, stable locked/unavailable errors, optional chapter
 progress callbacks, and a controlled JSC/WebKit sample. Publication artifacts
 must declare `minSupportedAppVersion: "7.1"` or newer.
 
-See [Novel chapter-content contract (v1)](docs/novel-chapter-content.md) for the
+See the [novel chapter-text contract](docs/novel-chapter-content.md) for the
 wire shape, migration steps, resource/authentication rules, limits, and sample.
 
 ## ID Convention

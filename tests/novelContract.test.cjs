@@ -4,23 +4,18 @@ const assert = require("node:assert/strict");
 const {
   ChapterLockedError,
   ChapterUnavailableError,
-  SOURCE_CHAPTER_CONTENT_LIMITS,
-  SourceChapterContentFormat,
-  SourceChapterPresentation,
+  ContentType,
+  SOURCE_CHAPTER_TEXT_LIMITS,
+  SourceChapterTextFormat,
 } = require("../dist/types");
 const {
-  MINIMUM_PUBLICATION_APP_VERSION,
-  SourceChapterContentSchema,
+  SourceChapterTextSchema,
   canonicalSourceChapterResourceHref,
-  compareNumericVersions,
-  hasSourceChapterContentCapability,
-  validateSourcePublicationContract,
   wrapDelegateWithValidation,
 } = require("../dist/validate");
 
 const validContent = () => ({
-  contractVersion: 1,
-  format: SourceChapterContentFormat.HTML,
+  format: SourceChapterTextFormat.HTML,
   body: "<p>Hello, publication.</p>",
   resources: [
     {
@@ -32,18 +27,16 @@ const validContent = () => ({
   ],
 });
 
-test("source chapter content accepts the exact v1 wire shape and defaults resources", () => {
-  const parsed = SourceChapterContentSchema.parse({
-    contractVersion: 1,
-    format: SourceChapterContentFormat.PLAIN_TEXT,
+test("source chapter text accepts the wire shape and defaults resources", () => {
+  const parsed = SourceChapterTextSchema.parse({
+    format: SourceChapterTextFormat.PLAIN_TEXT,
     body: "Literal text",
   });
 
   assert.deepEqual(parsed.resources, []);
-  assert.equal(parsed.contractVersion, 1);
   assert.equal(parsed.format, "plainText");
-  assert.equal(SOURCE_CHAPTER_CONTENT_LIMITS.body, 2 * 1024 * 1024);
-  assert.equal(SOURCE_CHAPTER_CONTENT_LIMITS.bridgePayload, 4 * 1024 * 1024);
+  assert.equal(SOURCE_CHAPTER_TEXT_LIMITS.body, 2 * 1024 * 1024);
+  assert.equal(SOURCE_CHAPTER_TEXT_LIMITS.bridgePayload, 4 * 1024 * 1024);
 });
 
 test("canonical href validation rejects traversal and duplicate decoded identities", () => {
@@ -60,88 +53,46 @@ test("canonical href validation rejects traversal and duplicate decoded identiti
     href: "images/%68ero.jpg",
     url: "https://cdn.example.com/other.jpg",
   });
-  assert.throws(() => SourceChapterContentSchema.parse(duplicate));
+  assert.throws(() => SourceChapterTextSchema.parse(duplicate));
 });
 
 test("resource URLs require credential-free host-bearing HTTP(S)", () => {
   const credentialed = validContent();
   credentialed.resources[0].url = "https://user:secret@cdn.example.com/hero.jpg";
-  assert.throws(() => SourceChapterContentSchema.parse(credentialed));
+  assert.throws(() => SourceChapterTextSchema.parse(credentialed));
 
   const customScheme = validContent();
   customScheme.resources[0].url = "file:///tmp/hero.jpg";
-  assert.throws(() => SourceChapterContentSchema.parse(customScheme));
+  assert.throws(() => SourceChapterTextSchema.parse(customScheme));
 
-  assert.doesNotThrow(() => SourceChapterContentSchema.parse(validContent()));
+  assert.doesNotThrow(() => SourceChapterTextSchema.parse(validContent()));
 });
 
 test("developer validation enforces UTF-8 body and complete bridge bounds", () => {
   const oversizedBody = validContent();
   oversizedBody.body = "🙂".repeat(
-    Math.floor(SOURCE_CHAPTER_CONTENT_LIMITS.body / 4) + 1,
+    Math.floor(SOURCE_CHAPTER_TEXT_LIMITS.body / 4) + 1,
   );
-  assert.throws(() => SourceChapterContentSchema.parse(oversizedBody));
+  assert.throws(() => SourceChapterTextSchema.parse(oversizedBody));
 
   const oversizedBridge = validContent();
   oversizedBridge.resources[0].context = {
-    token: "x".repeat(SOURCE_CHAPTER_CONTENT_LIMITS.bridgePayload),
+    token: "x".repeat(SOURCE_CHAPTER_TEXT_LIMITS.bridgePayload),
   };
-  assert.throws(() => SourceChapterContentSchema.parse(oversizedBridge));
+  assert.throws(() => SourceChapterTextSchema.parse(oversizedBridge));
 });
 
-test("capability and app-version gates mirror the app contract", () => {
-  const info = {
-    id: "en.sample.suwatte.app.jsc",
-    name: "Controlled Novel Sample",
-    version: 1,
-    website: "https://www.suwatte.app",
-    rating: 0,
-    minSupportedAppVersion: MINIMUM_PUBLICATION_APP_VERSION,
-    languages: ["en"],
-  };
-  const configuration = {
-    chapterPresentation: SourceChapterPresentation.PUBLICATION,
-    chapterContentVersion: 1,
-  };
-  const delegate = {
-    async getChapters() {
-      return [];
-    },
-    async getChapterContent() {
-      return validContent();
-    },
-  };
-
-  assert.equal(hasSourceChapterContentCapability(configuration, delegate), true);
-  assert.equal(
-    hasSourceChapterContentCapability(
-      { ...configuration, chapterContentVersion: 2 },
-      delegate,
-    ),
-    false,
-  );
-  assert.doesNotThrow(() =>
-    validateSourcePublicationContract(info, configuration, delegate),
-  );
-  assert.throws(() =>
-    validateSourcePublicationContract(
-      { ...info, minSupportedAppVersion: "7" },
-      configuration,
-      delegate,
-    ),
-  );
-  assert.equal(compareNumericVersions("7", "7.1"), -1);
-  assert.equal(compareNumericVersions("7.1.0", "7.1"), 0);
-  assert.equal(compareNumericVersions("7.2", "7.1.9"), 1);
+test("novel remains the single source-facing text declaration", () => {
+  assert.equal(ContentType.NOVEL, 4);
 });
 
-test("delegate wrapping validates getChapterContent and stable errors use app names", async () => {
+test("delegate wrapping validates getChapterText and stable errors use app names", async () => {
   const delegate = wrapDelegateWithValidation({
-    async getChapterContent() {
+    async getChapterText() {
       return validContent();
     },
   });
-  const content = await delegate.getChapterContent("content", "chapter");
+  const content = await delegate.getChapterText("content", "chapter");
   assert.equal(content.body, "<p>Hello, publication.</p>");
 
   assert.equal(new ChapterUnavailableError().name, "ChapterUnavailable");
