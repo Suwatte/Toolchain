@@ -10,9 +10,23 @@ const {
   ContentProgressDataSchema,
   UpdateItemSchema,
   RedrawSchema,
+  ItemPageSectionSchema,
   wrapDelegateWithValidation,
   DelegateValidationError,
 } = require("../dist/validate");
+
+test("ItemPageSectionSchema accepts every modern page section style", () => {
+  for (let style = 11; style <= 19; style += 1) {
+    const parsed = ItemPageSectionSchema.parse({
+      id: `section-${style}`,
+      title: `Section ${style}`,
+      style,
+      items: [{ id: `item-${style}`, title: `Item ${style}`, rating: 0 }],
+    });
+
+    assert.equal(parsed.style, style);
+  }
+});
 
 test("ContentSchema accepts valid content payload", () => {
   const parsed = ContentSchema.parse({

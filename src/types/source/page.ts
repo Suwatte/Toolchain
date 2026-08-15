@@ -27,6 +27,15 @@ export enum PageSectionStyle {
   BANNER = 8,
   HIGHLIGHT = 9,
   READABLE = 10,
+  MOSAIC = 11,
+  RANKED = 12,
+  STORY_RAIL = 13,
+  EDITORIAL = 14,
+  THREE_STACK = 15,
+  WINDOWPANE = 16,
+  SIDECAR = 17,
+  DUET = 18,
+  TAPESTRY = 19,
 }
 
 export type HomePage = {
