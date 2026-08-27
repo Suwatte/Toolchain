@@ -18,7 +18,6 @@ export const handleLogRequest = (
     try {
       const parsed = JSON.parse(body);
 
-      // Log the parsed JSON data
       logEntry(parsed);
 
       res.writeHead(200, { "Content-Type": "text/plain" });

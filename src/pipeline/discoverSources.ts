@@ -132,10 +132,9 @@ export const discoverSources = async (
           }
         }
 
-        // The v2 networking stack is opt-in: authors either write the
-        // directive themselves or it is inferred from HttpClient usage, and
-        // the artifact banner carries it so the app can read the opt-in
-        // without executing any source code.
+        // HttpClient is opt-in. Preserve an explicit directive or infer it
+        // from usage, then stamp the artifact so the app can select the
+        // transport without executing Source code.
         const usesHttpClient =
           environment === "jsc" &&
           (detectHttpClientDirective(entryContent) ||

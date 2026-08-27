@@ -1,6 +1,5 @@
 import { build, stop } from "esbuild";
-import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
-import { NodeModulesPolyfillPlugin } from "@esbuild-plugins/node-modules-polyfill";
+import { nodeModulesPolyfillPlugin } from "esbuild-plugins-node-modules-polyfill";
 import { BundleOptions, BundlerAdapter } from "./BundlerAdapter";
 
 // Device artifacts run in JavaScriptCore; the emulator and its transport
@@ -43,10 +42,11 @@ export class EsbuildBundlerAdapter implements BundlerAdapter {
           .join("\n"),
       },
       plugins: [
-        NodeModulesPolyfillPlugin(),
-        NodeGlobalsPolyfillPlugin({
-          process: true,
-          buffer: true,
+        nodeModulesPolyfillPlugin({
+          globals: {
+            Buffer: true,
+            process: true,
+          },
         }),
       ],
     });

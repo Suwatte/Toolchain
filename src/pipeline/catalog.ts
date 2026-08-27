@@ -49,7 +49,7 @@ const loadSourceClass = (entryPath: string) => {
 export const resolveCatalogVariants = (
   discoveredSources: DiscoveredSource[],
 ): BuildVariant[] => {
-  // Ensure emulator globals are available for source loading
+  // Source classes can access native globals while their static metadata loads.
   installEmulatorGlobals();
 
   return discoveredSources.flatMap((source) => {

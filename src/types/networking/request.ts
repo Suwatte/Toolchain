@@ -43,10 +43,14 @@ export type NetworkRequest = {
   params?: JsonObject;
 
   /**
-   * An object representing the body of the request. Depending on the Content-Type header,
-   * this can either be send as a JSON object (for application/json) or a URL-encoded string (for application/x-www-form-urlencoded).
+   * A JSON-compatible dictionary representing the request body.
+   *
+   * JavaScriptCore bridge rule: keep `application/x-www-form-urlencoded`
+   * bodies as dictionaries. Suwatte's native `NetworkClient` performs the
+   * encoding; passing a pre-serialized string fails the Swift `[String: Any]`
+   * conversion. Use `HttpClient` when a raw string or byte body is required.
    */
-  body?: any;
+  body?: JsonObject;
 
   /** An object representing any additional headers to be included in the request. */
   headers?: RequestHeaders;

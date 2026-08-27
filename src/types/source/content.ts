@@ -18,29 +18,28 @@ export type Content = {
   contentType?: ContentType;
   readingMode?: ReadingMode;
 
-  // Other Semi important information about this title
+  /** Additional title metadata displayed by the app. */
   statistics?: Statistics;
   credits?: Credit[];
   summary?: string;
   additionalTitles?: string[];
   additionalDetails?: Record<string, string>;
 
-  // Other Displayed Sections
+  /** Additional content sections displayed by the app. */
   genres?: Tag[];
   properties?: TagSection[];
   collections?: ItemCollection[];
   links?: WebLink[];
   characters?: Character[];
 
-  // Tracking
-  /// Key, Value pairs used to automatically link to other sources
+  /** Key-value identifiers used to link equivalent titles across Sources. */
   endpoints?: Record<string, string>;
   trackStatus?: TrackStatus;
 
-  // Source Context
+  /** Opaque Source-owned context returned to later delegate calls. */
   context?: JsonObject;
 
-  // Attached Chapters
+  /** Chapters currently attached to this content record. */
   chapters?: Chapter[];
 };
 
@@ -105,10 +104,10 @@ export enum TrackStatus {
 }
 
 export enum ContentRating {
-  EVERYONE, // Everyone
-  SUGGESTIVE, // PG13
-  MATURE, // PG118
-  UNKNOWN, // Unknown / not provided by source
+  EVERYONE,
+  SUGGESTIVE,
+  MATURE,
+  UNKNOWN,
 }
 
 export type ProgressUpdate = {
@@ -120,7 +119,8 @@ export type ProgressUpdate = {
 export type ProgressState = {
   readChapterIds?: string[];
   currentState?: CurrentReadingState;
-  systemMarkBelowCurrentAsRead?: boolean; // when true, the app should mark all below currentState as read
+  /** Marks every chapter below `currentState` as read when true. */
+  systemMarkBelowCurrentAsRead?: boolean;
 };
 
 export type CurrentReadingState = {

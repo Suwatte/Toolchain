@@ -1,7 +1,17 @@
 {
   "name": "@suwatte/toolchain",
-  "version": "5.1.0",
-  "description": "Suwatte Toolchain",
+  "version": "1.0.0",
+  "description": "Build, validate, and test Source plugins for Suwatte",
+  "homepage": "https://suwatte.mantton.com/developers/introduction/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Suwatte/Toolchain.git"
+  },
+  "bugs": {
+    "url": "https://suwatte.mantton.com/help/",
+    "email": "help@mantton.com"
+  },
+  "funding": "https://www.patreon.com/mantton",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -33,12 +43,16 @@
     "clean": "node -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\"",
     "build": "tsc && npm run copy",
     "build:clean": "npm run clean && npm run build",
-    "copy": "ncp ./src/templates ./dist/templates",
-    "test": "npm run build:clean && node --test tests/**/*.test.cjs"
+    "copy": "node -e \"require('fs').cpSync('./src/templates','./dist/templates',{recursive:true})\"",
+    "test": "npm run build:clean && node --test tests/**/*.test.cjs",
+    "prepack": "npm run build:clean",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
+    "suwatte",
+    "source-plugin",
     "toolchain",
-    "suwatte"
+    "typescript"
   ],
   "author": {
     "name": "Mantton",
@@ -47,24 +61,19 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "dependencies": {
-    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
-    "axios": "^1.5.1",
+    "axios": "^1.20.0",
     "chalk": "^4",
     "commander": "^12.1.0",
     "esbuild": "^0.25.0",
-    "fs-extra": "^11.2.0",
-    "ncp": "^2.0.0",
+    "esbuild-plugins-node-modules-polyfill": "^1.8.3",
     "serve-handler": "^6.1.5",
     "typescript": "^5.5.4",
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/commander": "^2.12.0",
-    "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.4.0",
     "@types/serve-handler": "^6.1.4"
   },
@@ -77,7 +86,11 @@
     }
   },
   "files": [
-    "/dist",
-    "/bin"
-  ]
+    "dist",
+    "bin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "commonjs"
 }

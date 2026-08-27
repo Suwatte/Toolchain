@@ -4,18 +4,17 @@ import { BuildCommandOptions } from "../pipeline/types";
 import { formatBuildTimingReport } from "../utils/timingReport";
 
 export const build = async (config: BuildCommandOptions) => {
-  console.info(chalk.yellow.bold("Building Catalog..."));
+  console.info(chalk.yellow.bold("Building catalog..."));
   try {
     const result = await runBuildPipeline(config);
-    console.info(
-      chalk.green.bold("Catalog Compiled Successfully!")
-    );
+    console.info(chalk.green.bold("Catalog compiled successfully."));
     if (config.timings) {
       console.info(formatBuildTimingReport(result));
     }
-  } catch (err: any) {
-    console.error(chalk.red.bold("Failed to build source catalog"));
-    console.error(chalk.red.bold(`${err.message}`));
-    process.exit(-1);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to build source catalog: ${message}`, {
+      cause: error,
+    });
   }
 };

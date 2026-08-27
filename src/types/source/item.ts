@@ -38,7 +38,7 @@ export type ItemListRequest = {
   key?: string;
   sort?: SortSelection;
 
-  /* Sources can provide this flag to the application to disable sorting on certain lists*/
+  /** Prevents the app from sorting this list. */
   disableSorting?: boolean;
 };
 
@@ -55,6 +55,6 @@ export type SortSelection = {
 
 export type SortOptions = {
   options: LabeledOption[];
-  /*  When true, users will be unable to toggle the asc/desc sorting, defaults to false if not set */
+  /** Prevents readers from reversing the list's sort order. Defaults to false. */
   disableOrdering?: boolean;
 };

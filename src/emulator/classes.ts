@@ -388,6 +388,22 @@ export class NetworkClient {
 
   private async sendAxiosRequest(request: CombinedRequest) {
     const cookieHeader = request.cookies.map((v) => `${v.name}=${v.value}`).join("; ");
+    const contentType = Object.entries(request.headers ?? {}).find(
+      ([name]) => name.toLowerCase() === "content-type",
+    )?.[1];
+    if (
+      String(contentType ?? "").toLowerCase().includes("application/x-www-form-urlencoded") &&
+      request.body !== undefined &&
+      (request.body === null ||
+        typeof request.body !== "object" ||
+        Array.isArray(request.body))
+    ) {
+      throw new TypeError(
+        "NetworkClient form bodies must be plain objects. Suwatte's native " +
+          "JavaScriptCore bridge performs URL encoding and cannot convert a " +
+          "pre-serialized body to [String: Any].",
+      );
+    }
     const retries = request.maxRetries ?? 0;
     let attempt = 0;
 

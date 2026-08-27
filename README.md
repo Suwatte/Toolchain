@@ -1,91 +1,113 @@
 # @suwatte/toolchain
 
-Unified package for Suwatte source types, runtime, emulator, compiler, and CLI.
+The official, standalone toolkit for building Source plugins for
+[Suwatte](https://suwatte.mantton.com). It includes the public TypeScript
+types, runtime helpers, compiler, command-line interface, emulator, and
+validation schemas in one package. It does not depend on another
+Suwatte-scoped package.
 
-## Install
+[Read the developer guides](https://suwatte.mantton.com/developers/introduction/)
 
-```sh
-npm i @suwatte/toolchain
-```
+## Requirements
 
-## Exports
+- Node.js 22 or newer
+- `sharp` 0.34 when emulator tests need native image processing
 
-- `@suwatte/toolchain`
-- `@suwatte/toolchain/types`
-- `@suwatte/toolchain/runtime`
-- `@suwatte/toolchain/emulator`
-- `@suwatte/toolchain/validate`
-
-## CLI
-
-### Build
+## Installation
 
 ```sh
-suwatte build [--webpage] [-f <folder>]
+npm install --save-dev @suwatte/toolchain
 ```
 
-Default output:
+The package installs the `suwatte` command in the project.
 
-- `.stt` bundles under `stt/sources`
-- `stt/sources.json`
+## Project layout
 
-Pass `--webpage` to also emit:
+Put each Source in its own directory under `src/sources`. Every Source needs an
+`index.ts` file with a default export.
 
-- `stt/index.html`
-- `stt/main.css`
-- `stt/catalog.js`
+```text
+my-catalog/
+├── package.json
+├── tsconfig.json
+└── src/
+    └── sources/
+        ├── example-en/
+        │   └── index.ts
+        └── example-ja/
+            └── index.ts
+```
 
-### Serve
+The default export must be a delegate class with a static `info` property.
+Source metadata includes `id`, `name`, `version`, `website`, `languages`, and a
+numeric `ContentRating` value. Optional static variants generate additional
+artifacts from the same delegate class.
+
+## Command line
+
+Build the catalog:
 
 ```sh
-suwatte serve [-p <port>] [-f <folder>]
+npx suwatte build
 ```
 
-`serve` always builds with webpage assets enabled before hosting.
+The build writes installable `.stt` bundles and the source-list webpage to
+`dist/`:
 
-## Source Authoring Contract
+```text
+dist/
+├── sources/
+│   └── example-en.stt
+├── sources.json
+├── index.html
+├── main.css
+└── catalog.js
+```
 
-Each source directory must include:
+Serve the same catalog on the local network for device testing:
 
-- `index.ts` default export
+```sh
+npx suwatte serve
+```
 
-The default export is a delegate class with static `info: SourceInfo`. Source
-metadata must include `id`, `name`, `version`, `website`, `languages`, and the
-numeric `ContentRating` value. Optional static variants produce additional
-artifacts from the same class.
+Both commands accept `-f, --folder <folder>` to change the output directory and
+`--timings` to print build diagnostics. `serve` also accepts
+`-p, --port <port>`; the default port is `8080`.
 
-Toolchain generates bootstrap wrappers automatically per emitted variant.
+See [The command line](https://suwatte.mantton.com/developers/cli/) for the
+device-testing workflow.
 
-### Novel publication chapters
+## Package exports
 
-Toolchain 5.1.0 includes the HTML/plain-text chapter contract, strict
-developer validation, stable locked/unavailable errors, optional chapter
-progress callbacks, and authenticated resource metadata. A title with
-`contentType: ContentType.NOVEL` is a hard declaration that its chapters are
-served by `getChapterText(contentId, chapterId)`; the app does not fall back to
-`getChapterPages`. Mixed sources implement both chapter methods and select the
-representation independently on each title's `contentType`.
-
-## ID Convention
-
-- Language variants: `LANG.DOMAIN`
-- Non-language service variants: `LANG.DOMAIN.VARIANT`
-- `LANG` IDs are normalized lowercase/hyphen tokens; metadata `languages` remain canonical BCP-47 casing.
+| Export | Purpose |
+| --- | --- |
+| `@suwatte/toolchain` | Public Source types and runtime helpers |
+| `@suwatte/toolchain/types` | Source, content, chapter, page, and networking types |
+| `@suwatte/toolchain/runtime` | Source-class and variant runtime helpers |
+| `@suwatte/toolchain/emulator` | Node.js shims for stores, networking, crypto, and native images |
+| `@suwatte/toolchain/validate` | Zod schemas and delegate validation helpers |
 
 ## Emulator
 
-`@suwatte/toolchain/emulator` provides:
+Use the emulator to run a Source without the app:
 
-- `emulateSourceEntry(...)` and default `emulate(...)`
-- runtime controls: `installEmulatorGlobals`, `resetEmulatorStores`, `resetEmulatorRuntime`
-- built-in shims for `ObjectStore`, `SecureStore`, `NetworkClient`, `NetworkError`, `CloudflareError`
+```ts
+import emulate from "@suwatte/toolchain/emulator";
+import Target from "./src/sources/example-en";
 
-This is the recommended path for local source testing and script-based execution.
+const source = emulate(Target);
+const results = await source.getSearchResults({ query: "example" }, 1);
+```
+
+The emulator provides the same Source-facing globals used by the app, including
+`ObjectStore`, `SecureStore`, `NetworkClient`, `HttpClient`, `NetworkError`, and
+`CloudflareError`. See [The emulator](https://suwatte.mantton.com/developers/emulator/)
+for reset controls and test patterns.
 
 ## Validation
 
-`@suwatte/toolchain/validate` provides zod schemas for public toolchain types and
-helpers for validating delegate outputs in tests.
+The validation export checks delegate results during development without
+changing the `.stt` runtime contract:
 
 ```ts
 import {
@@ -94,32 +116,50 @@ import {
 } from "@suwatte/toolchain/validate";
 
 ContentSchema.parse(contentPayload);
-const validatedDelegate = wrapDelegateWithValidation(delegate, "MySource");
+const validatedDelegate = wrapDelegateWithValidation(delegate, "example-en");
 ```
 
-Validation helpers are test/developer focused and do not change `.stt` runtime contracts.
+## Networking compatibility
 
-## `getContentProgress` Return Shape
-
-`getContentProgress` may return `ContentProgressData | null` with:
-
-- `readChapters?: number[] | Set<number>` for sparse/non-contiguous reads (preferred when available)
-- `progress?: number` for contiguous reads up to a max chapter number
-- `status?: TrackStatus`
-- `lastReadDate?: Date`
-
-Precedence behavior in app runtime:
-
-1. If `readChapters` is present and non-empty, it is authoritative.
-2. Else if `progress` is present, chapters with `chapter.number <= progress` are treated as read.
-3. Sync is add-only; returned progress data should not be used to unmark chapters.
-
-Examples:
+Legacy `NetworkClient` requests cross the app's JavaScriptCore-to-Swift bridge.
+Their `body` must be a plain JSON-compatible dictionary. Keep
+`application/x-www-form-urlencoded` bodies as dictionaries because the native
+client performs the encoding:
 
 ```ts
-// Sparse/non-contiguous history
-return { readChapters: [1, 2, 5, 8], status: TrackStatus.READING };
-
-// Contiguous progress up to chapter 42
-return { progress: 42, status: TrackStatus.READING };
+await client.request({
+  url: `${baseUrl}/wp-admin/admin-ajax.php`,
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body: { action: "manga_get_chapters", manga: mangaId },
+});
 ```
+
+Use `HttpClient` when a request intentionally needs a raw string or
+`Uint8Array` body. The emulator rejects pre-serialized legacy form bodies so
+that local tests match the native bridge.
+
+See [Networking](https://suwatte.mantton.com/developers/networking/) for the two
+network stacks and their directives.
+
+## Identifier convention
+
+- Language variants: `LANG.DOMAIN`
+- Non-language service variants: `LANG.DOMAIN.VARIANT`
+- Normalize `LANG` identifiers to lowercase, hyphenated tokens. Keep canonical
+  BCP 47 casing in the metadata `languages` field.
+
+Changing a Source identifier creates a different Source and disconnects saved
+library entries from it. See [Versions](https://suwatte.mantton.com/developers/versioning/)
+before changing identifiers or compatibility requirements.
+
+## Development
+
+```sh
+npm ci
+npm test
+npm pack --dry-run
+```
+
+The test command performs a clean TypeScript build before running the Node.js
+test suite. The package is licensed under the [MIT License](LICENSE).

@@ -36,7 +36,6 @@ const getParsedCommandLine = (
   return parsed;
 };
 
-// Function to compile TypeScript files
 export async function compile(outDir: string) {
   const tsConfigPath = path.join(process.cwd(), "tsconfig.json");
   const parsed = getParsedCommandLine(tsConfigPath, outDir);

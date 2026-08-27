@@ -7,6 +7,7 @@ const {
   HttpClient,
   HttpError,
   HttpResponse,
+  NetworkClient,
   installEmulatorGlobals,
 } = require("../dist/emulator");
 
@@ -16,6 +17,18 @@ let retryAttempts = 0;
 
 test.before(async () => {
   server = http.createServer((request, response) => {
+    if (request.url === "/form") {
+      let body = "";
+      request.setEncoding("utf8");
+      request.on("data", (chunk) => {
+        body += chunk;
+      });
+      request.on("end", () => {
+        response.writeHead(200, { "Content-Type": "text/plain" });
+        response.end(body);
+      });
+      return;
+    }
     if (request.url === "/retry" && retryAttempts++ === 0) {
       request.socket.destroy();
       return;
@@ -163,4 +176,25 @@ test("emulator global installation exposes both network APIs", () => {
   installEmulatorGlobals();
   assert.equal(globalThis.NetworkClient.name, "NetworkClient");
   assert.equal(globalThis.HttpClient.name, "HttpClient");
+});
+
+test("legacy NetworkClient mirrors native form-body bridge requirements", async () => {
+  const client = new NetworkClient();
+  const response = await client.request({
+    url: `${baseUrl}/form`,
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: { action: "refresh", title: "a b" },
+  });
+  assert.equal(response.data, "action=refresh&title=a+b");
+
+  await assert.rejects(
+    client.request({
+      url: `${baseUrl}/form`,
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "action=refresh",
+    }),
+    /form bodies must be plain objects/,
+  );
 });

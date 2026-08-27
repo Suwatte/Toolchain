@@ -80,18 +80,4 @@ declare global {
     new (width: number, height: number): NativeCanvas;
     readonly prototype: NativeCanvas;
   };
-  class Crypto {
-    private constructor();
-    static md5(data: Uint8Array | string): Uint8Array;
-    static sha256(data: Uint8Array | string): Uint8Array;
-    static aesDecrypt(
-      data: Uint8Array,
-      key: Uint8Array,
-      iv: Uint8Array,
-    ): Uint8Array;
-    static xorKeystream(
-      data: Uint8Array,
-      options: XorKeystreamOptions,
-    ): Uint8Array;
-  }
 }

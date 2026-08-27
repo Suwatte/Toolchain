@@ -1,5 +1,4 @@
 import fs from "fs";
-import fsExtra from "fs-extra";
 import path from "path";
 import { BuildPaths, CatalogManifest } from "./types";
 
@@ -27,9 +26,12 @@ export const writeCatalogManifest = async (
 
 export const copyAssetsIfPresent = async (basePath: string, outDir: string) => {
   const assetsDirectory = path.join(basePath, "assets");
-  if (!fsExtra.existsSync(assetsDirectory)) {
+  if (!fs.existsSync(assetsDirectory)) {
     return;
   }
   const destination = path.join(outDir, "assets");
-  await fsExtra.copy(assetsDirectory, destination, { overwrite: true });
+  await fs.promises.cp(assetsDirectory, destination, {
+    force: true,
+    recursive: true,
+  });
 };

@@ -57,7 +57,7 @@ export const NetworkRequestSchema = z.object({
   url: URLSchema,
   method: NonEmptyStringSchema.optional(),
   params: JsonObjectSchema.optional(),
-  body: z.unknown().optional(),
+  body: JsonObjectSchema.optional(),
   headers: RequestHeadersSchema.optional(),
   cookies: NonEmptyArray(CookieSchema).optional(),
   timeout: z.number().optional(),
