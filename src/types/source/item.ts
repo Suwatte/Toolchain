@@ -18,6 +18,8 @@ export type Item = {
   trackStatus?: TrackStatus;
   destination?: Destination;
   context?: JsonObject;
+  /** Set when the title is a standalone work (see `Content.isStandalone`), so the app opens its page without a chapter list before the details load. */
+  isStandalone?: boolean;
 };
 
 export type ItemCollection = {

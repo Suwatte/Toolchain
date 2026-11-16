@@ -632,6 +632,7 @@ export const ItemSchema = z.object({
   trackStatus: z.nativeEnum(TrackStatus).optional(),
   destination: DestinationSchema.optional(),
   context: JsonObjectSchema.optional(),
+  isStandalone: z.boolean().optional(),
 });
 
 export const ItemCollectionSchema = z.object({
