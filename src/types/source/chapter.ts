@@ -41,8 +41,15 @@ export type Chapter = {
   isLocked?: boolean;
 
   /**
-   * Files the reader can download for this chapter. A downloaded chapter
-   * saves the file instead of its pages; reading online still uses pages.
+   * Files the reader can download for this chapter.
+   *
+   * A download-first Source (one without `getChapterPages`, or without
+   * `getChapterText` for novels) is read from these files: opening a chapter
+   * downloads its file, in any format, then opens it in the matching reader.
+   *
+   * In a Source that streams pages, a CBZ or CBR file replaces the page
+   * download when the chapter is downloaded; reading online still streams
+   * pages, and other formats are left for the Files list.
    */
   acquisitions?: Acquisition[];
 };
