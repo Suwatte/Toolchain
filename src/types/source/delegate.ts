@@ -6,7 +6,13 @@ import {
   SortOptions,
 } from "./item";
 import { Content, TrackStatus } from "./content";
-import { Chapter, ChapterPage, SourceChapterText } from "./chapter";
+import {
+  AcquisitionRequest,
+  AcquisitionTarget,
+  Chapter,
+  ChapterPage,
+  SourceChapterText,
+} from "./chapter";
 import { HomePage, ItemPageResponse, SourceFeed } from "./page";
 import { SourceConfiguration } from "./configuration";
 import { SearchFilter } from "./filter";
@@ -86,6 +92,12 @@ export interface Delegate {
   ): Promise<SourceChapterText>;
   willRequestImage?(request: NetworkRequest): Promise<NetworkRequest>;
   redrawImage?(request: RedrawImageRequest): Promise<Redraw | null>;
+  /**
+   * Returns a fresh request for an acquisition marked `resolveBeforeDownload`,
+   * just before the app downloads it. Required when any acquisition sets that
+   * flag. The app never stores the result.
+   */
+  resolveAcquisition?(target: AcquisitionTarget): Promise<AcquisitionRequest>;
 
   synchronizeLibrary?(
     since: Date | string,

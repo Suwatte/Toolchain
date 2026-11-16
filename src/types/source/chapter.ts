@@ -1,3 +1,4 @@
+import { NetworkRequest } from "../networking";
 import { JsonObject } from "../utils";
 import { ReadingMode } from "./content";
 
@@ -38,6 +39,65 @@ export type Chapter = {
   data?: SourceChapterData;
   providers?: ChapterProvider[];
   isLocked?: boolean;
+
+  /**
+   * Files the reader can download for this chapter. A downloaded chapter
+   * saves the file instead of its pages; reading online still uses pages.
+   */
+  acquisitions?: Acquisition[];
+};
+
+export enum AcquisitionFormat {
+  CBZ = "cbz",
+  CBR = "cbr",
+  EPUB = "epub",
+  PDF = "pdf",
+}
+
+/**
+ * The request for a file. Header values are strings because the app sends
+ * them exactly as given.
+ */
+export type AcquisitionRequest = Omit<NetworkRequest, "headers"> & {
+  headers?: Record<string, string>;
+};
+
+type AcquisitionDetails = {
+  /** Unique within its list. Passed to `resolveAcquisition`. */
+  id: string;
+  format: AcquisitionFormat;
+  /** Shown in the Files list, such as "Volume 3" or "Digital (HQ)". */
+  title?: string;
+  /** Expected size, shown before downloading. */
+  byteCount?: number;
+  /** Suggested file name, including its extension. */
+  fileName?: string;
+};
+
+/**
+ * A downloadable file for a chapter (`Chapter.acquisitions`) or a whole title,
+ * such as a volume or omnibus (`Content.acquisitions`).
+ *
+ * The app downloads it through this Source's network client, with the same
+ * cookies, user agent and Cloudflare handling as page requests.
+ *
+ * Give it either a `request` that stays valid, or `resolveBeforeDownload: true`
+ * when links are signed or short-lived. The app then calls
+ * `resolveAcquisition` for a fresh request before each download and never
+ * stores it.
+ */
+export type Acquisition = AcquisitionDetails &
+  (
+    | { request: AcquisitionRequest; resolveBeforeDownload?: false }
+    | { request?: never; resolveBeforeDownload: true }
+  );
+
+/** Identifies the file `resolveAcquisition` should return a request for. */
+export type AcquisitionTarget = {
+  contentId: string;
+  acquisitionId: string;
+  /** Set for chapter files, omitted for title files. */
+  chapterId?: string;
 };
 
 /**

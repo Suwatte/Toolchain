@@ -4,6 +4,7 @@ import {
   ContentStatus,
   ContentType,
   PageSectionStyle,
+  AcquisitionFormat,
   ReadingMode,
   SOURCE_CHAPTER_TEXT_LIMITS,
   SourceChapterTextFormat,
@@ -312,6 +313,64 @@ export const ChapterItemSchema = z.object({
   volume: z.number().optional(),
 });
 
+// Acquisition
+/** A file request keeps its headers and cookies, which the app sends as given. */
+export const AcquisitionRequestSchema = NetworkRequestSchema.extend({
+  headers: z.record(z.string(), { invalid_type_error: "Acquisition header values must be strings" }).optional(),
+  cookies: z.array(CookieSchema).optional(),
+}).superRefine((request, context) => {
+  if (!isSafeSourceChapterResourceURL(request.url)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Acquisition URLs must be http(s) with a host and no embedded credentials",
+      path: ["url"],
+    });
+  }
+});
+
+export const AcquisitionSchema = z
+  .object({
+    id: NonEmptyStringSchema,
+    format: z.nativeEnum(AcquisitionFormat),
+    request: AcquisitionRequestSchema.optional(),
+    resolveBeforeDownload: z.boolean().optional(),
+    title: TitleSchema.optional(),
+    byteCount: z.number().int().positive().optional(),
+    fileName: NonEmptyStringSchema.optional(),
+  })
+  .superRefine((acquisition, context) => {
+    if (acquisition.resolveBeforeDownload === true && acquisition.request) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "An acquisition resolved before download omits request; resolveAcquisition supplies it",
+        path: ["request"],
+      });
+    } else if (acquisition.resolveBeforeDownload !== true && !acquisition.request) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "An acquisition needs a request, or resolveBeforeDownload: true with resolveAcquisition",
+        path: ["request"],
+      });
+    }
+  });
+
+export const AcquisitionListSchema = z
+  .array(AcquisitionSchema)
+  .nonempty()
+  .superRefine((acquisitions, context) => {
+    const seen = new Set<string>();
+    acquisitions.forEach((acquisition, index) => {
+      if (seen.has(acquisition.id)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate acquisition id "${acquisition.id}"`,
+          path: [index, "id"],
+        });
+      }
+      seen.add(acquisition.id);
+    });
+  });
+
 export const ChapterSchema = z.object({
   id: NonEmptyStringSchema,
   index: UInt32Schema,
@@ -326,6 +385,7 @@ export const ChapterSchema = z.object({
   data: JsonObjectSchema.optional(),
   providers: z.array(ChapterProviderSchema).optional(),
   isLocked: z.boolean().optional(),
+  acquisitions: AcquisitionListSchema.optional(),
 });
 
 export const ChapterRequestSchema = z.object({
@@ -644,6 +704,7 @@ export const ContentSchema = z.object({
   progress: ProgressStateSchema.optional(),
   context: JsonObjectSchema.optional(),
   chapters: NonEmptyArray(ChapterSchema).optional(),
+  acquisitions: AcquisitionListSchema.optional(),
   flags: z.number().optional(),
 });
 
@@ -758,6 +819,7 @@ export const DelegateSchema = z.object({
   getChapterText: FunctionSchema.optional(),
   willRequestImage: FunctionSchema.optional(),
   redrawImage: FunctionSchema.optional(),
+  resolveAcquisition: FunctionSchema.optional(),
   getContentProgress: FunctionSchema.optional(),
   synchronizeLibrary: FunctionSchema.optional(),
   onContentsAddedToLibrary: FunctionSchema.optional(),
@@ -870,6 +932,7 @@ export const DelegateResultSchemaMap = {
   getChapterPages: NonEmptyArray(ChapterPageSchema),
   getChapterText: SourceChapterTextSchema,
   willRequestImage: NetworkRequestSchema,
+  resolveAcquisition: AcquisitionRequestSchema,
   redrawImage: z.union([RedrawSchema, z.null()]),
   getContentProgress: z.union([ContentProgressDataSchema, z.null()]),
   synchronizeLibrary: z.union([LibrarySyncResponseSchema, z.null()]),
@@ -890,6 +953,54 @@ export const validateDelegateMethodResult = <T>(
   }
 
   throw new DelegateValidationError(method, context, parsed.error);
+};
+
+type AcquisitionHolder = { acquisitions?: { resolveBeforeDownload?: boolean }[] };
+
+/** Paths of acquisitions that only `resolveAcquisition` can turn into a request. */
+const resolvedAcquisitionPaths = (method: string, result: unknown): (string | number)[][] => {
+  const paths = (holder: AcquisitionHolder | undefined, prefix: (string | number)[]) =>
+    (holder?.acquisitions ?? []).flatMap((acquisition, index) =>
+      acquisition.resolveBeforeDownload === true ? [[...prefix, "acquisitions", index, "resolveBeforeDownload"]] : [],
+    );
+  if (method === "getContent") {
+    const content = result as AcquisitionHolder & { chapters?: AcquisitionHolder[] };
+    return [
+      ...paths(content, []),
+      ...(content.chapters ?? []).flatMap((chapter, index) => paths(chapter, ["chapters", index])),
+    ];
+  }
+  if (method === "getChapters") {
+    return (result as AcquisitionHolder[]).flatMap((chapter, index) => paths(chapter, [index]));
+  }
+  return [];
+};
+
+/** A file that must be resolved is unusable when the source has no resolver. */
+const requireAcquisitionResolver = <T>(
+  delegate: Record<string, unknown>,
+  method: string,
+  result: T,
+  context: string,
+): T => {
+  if (typeof delegate.resolveAcquisition === "function") {
+    return result;
+  }
+  const paths = resolvedAcquisitionPaths(method, result);
+  if (paths.length > 0) {
+    throw new DelegateValidationError(
+      method,
+      context,
+      new ZodError(
+        paths.map((path) => ({
+          code: z.ZodIssueCode.custom,
+          message: "resolveBeforeDownload needs the source to implement resolveAcquisition",
+          path,
+        })),
+      ),
+    );
+  }
+  return result;
 };
 
 const isPromise = (value: unknown): value is Promise<unknown> =>
@@ -921,17 +1032,19 @@ export const wrapDelegateWithValidation = <T extends Record<string, any>>(
         const fn = value as (...innerArgs: unknown[]) => unknown;
         const output = Reflect.apply(fn, target, args);
 
-        if (isPromise(output)) {
-          return output.then((resolved) =>
-            validateDelegateMethodResult(prop as DelegateValidationMethod, resolved, context),
+        const validate = (result: unknown) =>
+          requireAcquisitionResolver(
+            target,
+            prop,
+            validateDelegateMethodResult(prop as DelegateValidationMethod, result, context),
+            context,
           );
+
+        if (isPromise(output)) {
+          return output.then(validate);
         }
 
-        return validateDelegateMethodResult(
-          prop as DelegateValidationMethod,
-          output,
-          context,
-        );
+        return validate(output);
       };
     },
   });

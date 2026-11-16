@@ -1,7 +1,7 @@
 import { UISection } from "./form";
 import { JsonObject } from "../utils";
 import { Destination } from "./destination";
-import { Chapter } from "./chapter";
+import { Acquisition, Chapter } from "./chapter";
 import { ItemCollection } from "./item";
 import { Tag, TagSection } from "./tag";
 
@@ -41,6 +41,9 @@ export type Content = {
 
   /** Chapters currently attached to this content record. */
   chapters?: Chapter[];
+
+  /** Whole-title files, such as volumes or an omnibus, imported into the library. */
+  acquisitions?: Acquisition[];
 };
 
 export type Statistics = {
