@@ -633,6 +633,12 @@ export const ItemSchema = z.object({
   destination: DestinationSchema.optional(),
   context: JsonObjectSchema.optional(),
   isStandalone: z.boolean().optional(),
+  stack: z
+    .object({
+      count: z.number().int().nonnegative().optional(),
+      covers: z.array(URLSchema).max(4).optional(),
+    })
+    .optional(),
 });
 
 export const ItemCollectionSchema = z.object({

@@ -20,6 +20,16 @@ export type Item = {
   context?: JsonObject;
   /** Set when the title is a standalone work (see `Content.isStandalone`), so the app opens its page without a chapter list before the details load. */
   isStandalone?: boolean;
+  /** Set when the item stands for a group of titles, such as a reading list. The app draws `covers` behind the item's own cover. */
+  stack?: ItemStack;
+};
+
+/** A group of titles shown as one item. */
+export type ItemStack = {
+  /** How many titles the group holds. */
+  count?: number;
+  /** Covers of other titles in the group, nearest first. The app draws up to two. */
+  covers?: string[];
 };
 
 export type ItemCollection = {
