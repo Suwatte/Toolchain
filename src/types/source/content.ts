@@ -17,6 +17,13 @@ export type Content = {
   /** NOVEL routes exclusively to getChapterText; all other values use pages. */
   contentType?: ContentType;
   readingMode?: ReadingMode;
+  /**
+   * One complete work rather than a series: a book, a one-shot or a single
+   * volume, read from its only chapter. The app shows the title's details
+   * and a Read button instead of a chapter list. Leave it unset for a series
+   * that has only one chapter so far.
+   */
+  isStandalone?: boolean;
 
   /** Additional title metadata displayed by the app. */
   statistics?: Statistics;

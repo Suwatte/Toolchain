@@ -688,6 +688,7 @@ export const ContentSchema = z.object({
   status: z.nativeEnum(ContentStatus).optional(),
   contentType: z.nativeEnum(ContentType).optional(),
   readingMode: z.nativeEnum(ReadingMode).optional(),
+  isStandalone: z.boolean().optional(),
   statistics: StatisticsSchema.optional(),
   credits: NonEmptyArray(CreditSchema).optional(),
   summary: z.string().optional(),
