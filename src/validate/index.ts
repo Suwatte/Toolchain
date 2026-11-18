@@ -815,6 +815,7 @@ export const DelegateSchema = z.object({
   getSearchFilters: FunctionSchema.optional(),
   getCustomFeeds: FunctionSchema.optional(),
   getSettingsPage: FunctionSchema.optional(),
+  getSetupState: FunctionSchema.optional(),
   onFormSubmitted: FunctionSchema.optional(),
   handleOAuthCallback: FunctionSchema.optional(),
   clearAuthentication: FunctionSchema.optional(),
@@ -924,6 +925,11 @@ export const parseWithSchema = <T>(
   throw new DelegateValidationError(label, "schema", parsed.error);
 };
 
+export const SetupStateSchema = z.object({
+  ready: z.boolean(),
+  message: z.string().optional(),
+});
+
 export const DelegateResultSchemaMap = {
   getConfiguration: SourceConfigurationSchema,
   getHomePage: HomePageSchema,
@@ -932,6 +938,7 @@ export const DelegateResultSchemaMap = {
   getSearchFilters: NonEmptyArray(SearchFilterSchema),
   getCustomFeeds: SourceFeedArraySchema,
   getSettingsPage: z.union([UIFormSchema, z.null()]),
+  getSetupState: SetupStateSchema,
   getItemList: PagedItemListSchema,
   getItemPage: ItemPageResponseSchema,
   getPageSectionItems: NonEmptyArray(ItemSchema),

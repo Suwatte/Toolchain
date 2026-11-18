@@ -20,6 +20,17 @@ import { PopulatedForm, UIForm as UIForm } from "./form";
 import { Redraw, RedrawImageRequest } from "./image";
 import { NetworkRequest } from "../networking";
 
+/**
+ * Whether the source has what it needs to browse, such as a server address,
+ * an API key or a sign-in.
+ */
+export type SetupState = {
+  /** Only `false` holds the source back; the app treats anything else as ready. */
+  ready: boolean;
+  /** What's missing, in the source's own words. Shown as is. */
+  message?: string;
+};
+
 export type ContentProgressData = {
   status?: TrackStatus;
   /**
@@ -54,6 +65,14 @@ export interface Delegate {
   onFormSubmitted?(id: string, data: PopulatedForm): Promise<void>;
   handleOAuthCallback?(response: string): Promise<void>;
   clearAuthentication?(): Promise<void>;
+  /**
+   * Called before the app browses or searches the source. Until it returns
+   * `{ ready: false }` no more, the source's home shows "Finish Setup" with a
+   * link to the settings page, and global search skips it. Keep it quick and
+   * local, such as checking stored settings; if it throws, the app treats the
+   * source as ready. Needs Suwatte 7.2.1 build 12 or later.
+   */
+  getSetupState?(): Promise<SetupState>;
 
   /**
    * fetches a paged list of items based of a provided request

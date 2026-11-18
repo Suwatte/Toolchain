@@ -360,3 +360,13 @@ test("ContentProgressDataSchema accepts optional progress payloads", () => {
     });
   });
 });
+
+test("getSetupState results are checked like other methods", async () => {
+  const wrapped = wrapDelegateWithValidation({
+    getSetupState: async () => ({ ready: false, message: "Add your server address." }),
+  });
+  assert.deepEqual(await wrapped.getSetupState(), { ready: false, message: "Add your server address." });
+
+  const loose = wrapDelegateWithValidation({ getSetupState: async () => ({ ready: "no" }) });
+  await assert.rejects(() => loose.getSetupState(), DelegateValidationError);
+});
