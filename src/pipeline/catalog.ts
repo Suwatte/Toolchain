@@ -11,6 +11,7 @@ import { ContentRating } from "../types";
 import {
   BuildVariant,
   CATALOG_VERSION,
+  CatalogCapability,
   CatalogManifest,
   CatalogSource,
   DiscoveredSource,
@@ -44,6 +45,40 @@ const loadSourceClass = (entryPath: string) => {
   delete require.cache[resolvedPath];
   const moduleValue = require(resolvedPath) as unknown;
   return resolveDefaultExport(moduleValue);
+};
+
+/** The methods behind each catalog badge; any one of them is enough. */
+const CAPABILITY_METHODS: [CatalogCapability, string[]][] = [
+  ["signIn", ["handleOAuthCallback", "clearAuthentication"]],
+  ["librarySync", ["synchronizeLibrary"]],
+  ["progressSync", ["getTrackEntryPage"]],
+  ["novels", ["getChapterText"]],
+];
+
+/**
+ * Reads the badges from the source's methods. Methods written as class fields
+ * only exist on an instance, so one is made if the prototype lacks any.
+ */
+export const readCatalogCapabilities = (
+  cls: new (...args: any[]) => unknown,
+  args?: Record<string, unknown>,
+): CatalogCapability[] => {
+  const prototype = cls.prototype as Record<string, unknown> | undefined;
+  let instance: Record<string, unknown> | undefined;
+  const has = (name: string) => {
+    if (typeof prototype?.[name] === "function") return true;
+    if (instance === undefined) {
+      try {
+        instance = new cls(args) as Record<string, unknown>;
+      } catch {
+        instance = {};
+      }
+    }
+    return typeof instance?.[name] === "function";
+  };
+  return CAPABILITY_METHODS.filter(([, methods]) => methods.some(has)).map(
+    ([capability]) => capability,
+  );
 };
 
 export const resolveCatalogVariants = (
@@ -96,6 +131,7 @@ export const resolveCatalogVariants = (
         },
         variantArgs: variant.args,
         config: variant.config,
+        capabilities: readCatalogCapabilities(cls, variant.args),
       } satisfies BuildVariant;
     });
   });
@@ -113,6 +149,9 @@ export const createCatalogManifest = (
       variantId: variant.variantId,
       sourceId: variant.sourceId,
       environment: variant.environment,
+      ...(variant.capabilities?.length
+        ? { capabilities: variant.capabilities }
+        : {}),
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
 

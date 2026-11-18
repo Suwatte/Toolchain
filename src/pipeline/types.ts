@@ -36,6 +36,16 @@ export type DiscoveredSource = {
   usesHttpClient: boolean;
 };
 
+/**
+ * Features a source offers, shown as badges in the app's source catalog.
+ * Each is read from the source's own methods, so a source can't claim one it lacks.
+ */
+export type CatalogCapability =
+  | "signIn"
+  | "librarySync"
+  | "progressSync"
+  | "novels";
+
 export type BuildVariant = {
   sourceId: string;
   variantId: string;
@@ -55,6 +65,7 @@ export type BuildVariant = {
   };
   variantArgs?: Record<string, unknown>;
   config?: unknown;
+  capabilities?: CatalogCapability[];
   wrapperPath?: string;
 };
 
@@ -72,6 +83,8 @@ export type CatalogSource = {
   variantId: string;
   sourceId: string;
   environment: SourceEnvironment;
+  /** Left out when the source offers none. */
+  capabilities?: CatalogCapability[];
 };
 
 export type CatalogManifest = {
