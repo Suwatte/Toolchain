@@ -57,6 +57,10 @@ export type ContentIntent = {
 
 /**
  * Facts about the app a source may act on.
+ *
+ * Added in Suwatte 7.2.1 (build 12). On older apps `Application` doesn't
+ * exist, so a source that supports them checks first:
+ * `typeof Application !== "undefined"`, and treats Safe Mode as on otherwise.
  */
 export declare class STTApplication {
   /**
