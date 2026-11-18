@@ -45,3 +45,23 @@ export declare class STTStore {
    */
   object(k: string): Promise<JsonObject | null>;
 }
+
+/**
+ * What the reader wants to see, for sources that can filter on their own server.
+ * It carries only whether Safe Mode is on, never what the app hid or how much.
+ */
+export type ContentIntent = {
+  /** Safe Mode is on, so the app hides mature and adult titles. */
+  isSafeModeEnabled: boolean;
+};
+
+/**
+ * Facts about the app a source may act on.
+ */
+export declare class STTApplication {
+  /**
+   * What the reader wants to see right now. It can change between calls,
+   * for example when a Safe Mode schedule starts, so ask per request.
+   */
+  getContentIntent(): Promise<ContentIntent>;
+}

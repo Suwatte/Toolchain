@@ -1,5 +1,5 @@
 import { NetworkRequest, NetworkResponse } from "./networking";
-import { STTStore } from "./store";
+import { STTApplication, STTStore } from "./store";
 export * from "./networking";
 export * from "./native";
 export * from "./source";
@@ -15,6 +15,10 @@ declare global {
    * Stores Key-Value pairs as a JSON String in the UserDefault
    */
   const ObjectStore: STTStore;
+  /**
+   * Facts about the app, such as whether Safe Mode is on.
+   */
+  const Application: STTApplication;
 }
 
 declare global {

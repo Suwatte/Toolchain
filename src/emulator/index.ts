@@ -5,6 +5,7 @@ import {
 } from "../runtime";
 import {
   CloudflareError,
+  EmulatorApplication,
   HttpClient,
   HttpError,
   HttpHeaders,
@@ -89,6 +90,7 @@ function emulate<T>(
 
 export {
   CloudflareError,
+  EmulatorApplication,
   HttpClient,
   HttpError,
   HttpHeaders,

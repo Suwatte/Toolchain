@@ -180,7 +180,23 @@ export class CloudflareError extends Error {
   }
 }
 
+/**
+ * Stands in for the app's `Application` global. Tests set the intent they need.
+ */
+export class EmulatorApplication {
+  contentIntent: { isSafeModeEnabled: boolean };
+
+  constructor(contentIntent = { isSafeModeEnabled: false }) {
+    this.contentIntent = contentIntent;
+  }
+
+  async getContentIntent() {
+    return { ...this.contentIntent };
+  }
+}
+
 export type EmulatorGlobalOverrides = Partial<{
+  Application: EmulatorApplication;
   ObjectStore: STTStore;
   SecureStore: STTStore;
   NetworkClient: typeof NetworkClient;
@@ -1044,6 +1060,7 @@ const defaultObjectStore = new STTStore("os");
 const defaultSecureStore = new STTStore("ss");
 
 const defaultGlobals = () => ({
+  Application: new EmulatorApplication(),
   ObjectStore: defaultObjectStore,
   SecureStore: defaultSecureStore,
   NetworkClient,
