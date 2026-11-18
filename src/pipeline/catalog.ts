@@ -56,27 +56,25 @@ const CAPABILITY_METHODS: [CatalogCapability, string[]][] = [
 ];
 
 /**
- * Reads the badges from the source's methods. Methods written as class fields
- * only exist on an instance, so one is made if the prototype lacks any.
+ * Reads the badges from the methods the source class declares, including
+ * inherited ones. Nothing is run: no constructor, and no getter. Methods
+ * written as class fields only exist on an instance, so they don't count.
  */
 export const readCatalogCapabilities = (
   cls: new (...args: any[]) => unknown,
-  args?: Record<string, unknown>,
 ): CatalogCapability[] => {
-  const prototype = cls.prototype as Record<string, unknown> | undefined;
-  let instance: Record<string, unknown> | undefined;
-  const has = (name: string) => {
-    if (typeof prototype?.[name] === "function") return true;
-    if (instance === undefined) {
-      try {
-        instance = new cls(args) as Record<string, unknown>;
-      } catch {
-        instance = {};
-      }
+  const declared = (name: string) => {
+    for (
+      let proto: object | null = cls.prototype;
+      proto && proto !== Object.prototype;
+      proto = Object.getPrototypeOf(proto)
+    ) {
+      const descriptor = Object.getOwnPropertyDescriptor(proto, name);
+      if (descriptor) return typeof descriptor.value === "function";
     }
-    return typeof instance?.[name] === "function";
+    return false;
   };
-  return CAPABILITY_METHODS.filter(([, methods]) => methods.some(has)).map(
+  return CAPABILITY_METHODS.filter(([, methods]) => methods.some(declared)).map(
     ([capability]) => capability,
   );
 };
@@ -131,10 +129,17 @@ export const resolveCatalogVariants = (
         },
         variantArgs: variant.args,
         config: variant.config,
-        capabilities: readCatalogCapabilities(cls, variant.args),
+        capabilities: readCatalogCapabilities(cls),
       } satisfies BuildVariant;
     });
   });
+};
+
+const withoutCapabilities = <T extends object>(metadata: T): T => {
+  const { capabilities: _ignored, ...rest } = metadata as T & {
+    capabilities?: unknown;
+  };
+  return rest as T;
 };
 
 export const createCatalogManifest = (
@@ -143,7 +148,8 @@ export const createCatalogManifest = (
 ): CatalogManifest => {
   const sources: CatalogSource[] = variants
     .map((variant) => ({
-      ...variant.metadata,
+      // Only the methods decide the badges, never the source's own metadata.
+      ...withoutCapabilities(variant.metadata),
       path: variant.artifactId,
       config: variant.config,
       variantId: variant.variantId,

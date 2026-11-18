@@ -9,12 +9,14 @@ const {
   readCatalogCapabilities,
 } = require("../dist/pipeline/catalog");
 
-test("catalog badges come from the source's own methods, including class fields", async () => {
-  class Everything {
+test("catalog badges come from declared methods without running the source", async () => {
+  class Base {
+    async getChapterText() {}
+  }
+  class Everything extends Base {
     async clearAuthentication() {}
     async synchronizeLibrary() {}
     async getTrackEntryPage() {}
-    getChapterText = async () => "";
   }
   class Plain {
     // Configuration can't claim a badge.
@@ -24,10 +26,13 @@ test("catalog badges come from the source's own methods, including class fields"
   }
   class Throws {
     constructor() {
-      throw new Error("needs args");
+      throw new Error("never constructed");
     }
+    get getChapterText() {
+      throw new Error("never read");
+    }
+    async handleOAuthCallback() {}
   }
-  Throws.prototype.handleOAuthCallback = async () => {};
 
   assert.deepEqual(readCatalogCapabilities(Everything), [
     "signIn",
@@ -50,7 +55,9 @@ test("catalog badges come from the source's own methods, including class fields"
     metadata: { id, name: id, version: 1, website: "https://example.com", rating: 0, languages: ["en"] },
     capabilities,
   });
-  const { sources } = createCatalogManifest(root, [variant("a", ["novels"]), variant("b", [])]);
+  const claimed = variant("b", []);
+  claimed.metadata.capabilities = ["novels"];
+  const { sources } = createCatalogManifest(root, [variant("a", ["novels"]), claimed]);
   assert.deepEqual(sources[0].capabilities, ["novels"]);
   assert.equal("capabilities" in sources[1], false);
 });
