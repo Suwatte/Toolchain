@@ -182,12 +182,13 @@ export class CloudflareError extends Error {
 
 /**
  * Stands in for the app's `Application` global. Tests set the intent they need.
+ * Safe Mode is on unless a test turns it off, as it is in a fresh app.
  */
 export class EmulatorApplication {
   #isSafeModeEnabled: boolean;
 
-  constructor(contentIntent = { isSafeModeEnabled: false }) {
-    this.#isSafeModeEnabled = contentIntent.isSafeModeEnabled === true;
+  constructor(contentIntent: { isSafeModeEnabled?: boolean } = {}) {
+    this.#isSafeModeEnabled = contentIntent.isSafeModeEnabled !== false;
   }
 
   // Only the one field the app sends, whatever the test passed in.
