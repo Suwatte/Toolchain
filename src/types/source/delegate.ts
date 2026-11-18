@@ -66,11 +66,12 @@ export interface Delegate {
   handleOAuthCallback?(response: string): Promise<void>;
   clearAuthentication?(): Promise<void>;
   /**
-   * Called before the app browses or searches the source. Until it returns
-   * `{ ready: false }` no more, the source's home shows "Finish Setup" with a
-   * link to the settings page, and global search skips it. Keep it quick and
-   * local, such as checking stored settings; if it throws, the app treats the
-   * source as ready. Needs Suwatte 7.2.1 build 12 or later.
+   * Called before the app browses or searches the source. While it returns
+   * `{ ready: false }`, the source's home shows "Finish Setup" (with a link to
+   * `getSettingsPage` when the source has one), and search and global search
+   * report the source as not set up. Keep it quick and local, such as checking
+   * stored settings: if it throws or takes more than about 5 seconds, the app
+   * treats the source as ready. Older app versions never call it.
    */
   getSetupState?(): Promise<SetupState>;
 
