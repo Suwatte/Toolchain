@@ -10,12 +10,12 @@ test("sources read the content intent the test sets, defaulting to Safe Mode on"
   const intent = await Application.getContentIntent();
   assert.deepEqual(intent, { isSafeModeEnabled: true });
 
-  // Only the one field reaches the source.
-  resetEmulatorRuntime({ Application: new EmulatorApplication({ isSafeModeEnabled: true, hiddenCount: 3 }) });
+  // A source changing its copy can't change what the same Application reports next time.
+  intent.isSafeModeEnabled = false;
   assert.deepEqual(await Application.getContentIntent(), { isSafeModeEnabled: true });
 
-  // A source changing its copy can't change what the app reports next time.
-  intent.isSafeModeEnabled = false;
+  // Only the one field reaches the source.
+  resetEmulatorRuntime({ Application: new EmulatorApplication({ isSafeModeEnabled: true, hiddenCount: 3 }) });
   assert.deepEqual(await Application.getContentIntent(), { isSafeModeEnabled: true });
 });
 
