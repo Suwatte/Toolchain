@@ -52,8 +52,31 @@ const CAPABILITY_METHODS: [CatalogCapability, string[]][] = [
   ["signIn", ["handleOAuthCallback", "clearAuthentication"]],
   ["librarySync", ["synchronizeLibrary"]],
   ["progressSync", ["getTrackEntryPage"]],
+  ["resumesProgress", ["getContentProgress"]],
   ["novels", ["getChapterText"]],
+  ["setup", ["getSetupState"]],
 ];
+
+/**
+ * Whether the source's own files hand out downloadable files. Acquisitions are
+ * data, not a method, so this reads the source's code (tests left out) for an
+ * `acquisitions` property instead of running it.
+ */
+export const offersDownloads = (entryPath: string): boolean => {
+  const pattern = /\bacquisitions\s*[:,}]/;
+  const visit = (dir: string): boolean =>
+    fs.readdirSync(dir, { withFileTypes: true }).some((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory())
+        return entry.name !== "node_modules" && visit(full);
+      return (
+        /\.(ts|js)$/.test(entry.name) &&
+        !/\.test\./.test(entry.name) &&
+        pattern.test(fs.readFileSync(full, "utf8"))
+      );
+    });
+  return visit(path.dirname(fs.realpathSync(entryPath)));
+};
 
 /**
  * Reads the badges from the methods the source class declares, including
@@ -129,7 +152,12 @@ export const resolveCatalogVariants = (
         },
         variantArgs: variant.args,
         config: variant.config,
-        capabilities: readCatalogCapabilities(cls),
+        capabilities: [
+          ...readCatalogCapabilities(cls),
+          ...(offersDownloads(source.entryPath)
+            ? (["downloads"] as const)
+            : []),
+        ],
       } satisfies BuildVariant;
     });
   });

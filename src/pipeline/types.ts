@@ -44,7 +44,10 @@ export type CatalogCapability =
   | "signIn"
   | "librarySync"
   | "progressSync"
-  | "novels";
+  | "resumesProgress"
+  | "novels"
+  | "downloads"
+  | "setup";
 
 export type BuildVariant = {
   sourceId: string;
