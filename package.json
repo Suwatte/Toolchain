@@ -1,6 +1,6 @@
 {
   "name": "@suwatte/toolchain",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Build, validate, and test Source plugins for Suwatte",
   "homepage": "https://suwatte.mantton.com/developers/introduction/",
   "repository": {
